@@ -16,18 +16,20 @@ type Request struct {
 	Ctx        context.Context
 }
 
-type service struct {
+type Service struct {
 	Client *github.Client
 	Ctx    context.Context
 }
 
-// ResponseTime gives the general time that is needed to respond to an issue
-func ResponseTime(req *Request, repo *gotime.Repo) (time.Duration, error) {
-	s := service{
+func NewService(req *Request) *Service {
+	return &Service{
 		Client: github.NewClient(req.HTTPClient),
 		Ctx:    req.Ctx,
 	}
+}
 
+// ResponseTime gives the general time that is needed to respond to an issue
+func (s *Service) ResponseTime(repo *gotime.Repo) (time.Duration, error) {
 	issues, err := s.getIssues(repo)
 
 	if err != nil {
@@ -44,7 +46,7 @@ func ResponseTime(req *Request, repo *gotime.Repo) (time.Duration, error) {
 }
 
 // Get some latest sample issues
-func (s *service) getIssues(repo *gotime.Repo) ([]*github.Issue, error) {
+func (s *Service) getIssues(repo *gotime.Repo) ([]*github.Issue, error) {
 	opt := &github.IssueListByRepoOptions{
 		Sort:      "created",
 		Direction: "desc",
@@ -57,7 +59,7 @@ func (s *service) getIssues(repo *gotime.Repo) ([]*github.Issue, error) {
 	return issues, err
 }
 
-func (s *service) collect(repo *gotime.Repo, issues []*github.Issue, c chan<- *gotime.IssueInfo) {
+func (s *Service) collect(repo *gotime.Repo, issues []*github.Issue, c chan<- *gotime.IssueInfo) {
 	var wg sync.WaitGroup
 	wg.Add(len(issues))
 
@@ -78,7 +80,7 @@ func (s *service) collect(repo *gotime.Repo, issues []*github.Issue, c chan<- *g
 	}()
 }
 
-func (s *service) getIssueInfo(repo *gotime.Repo, issue *github.Issue, page int) (*gotime.IssueInfo, error) {
+func (s *Service) getIssueInfo(repo *gotime.Repo, issue *github.Issue, page int) (*gotime.IssueInfo, error) {
 	info := &gotime.IssueInfo{
 		Repo:      repo,
 		Number:    *issue.Number,

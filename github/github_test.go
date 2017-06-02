@@ -28,7 +28,8 @@ var _ = Describe("Github", func() {
 				Members:  []string{"baopham"},
 				Provider: gotime.GITHUB,
 			}
-			responseTime, err := ResponseTime(req, repo)
+			service := NewService(req)
+			responseTime, err := service.ResponseTime(repo)
 			Expect(err).To(BeNil())
 			log.Println(responseTime)
 		})
