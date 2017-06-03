@@ -148,20 +148,18 @@ func (s *Service) getIssueInfo(repo *gotime.Repo, issue *github.Issue, page int)
 		info.OtherClosedAt = issue.ClosedAt
 	}
 
-	opt := &github.IssueListCommentsOptions{
-		Sort:      "created",
-		Direction: "asc",
-		ListOptions: github.ListOptions{
-			Page: page,
-		},
-	}
-
 	comments, resp, err := s.Client.Issues.ListComments(
 		s.Ctx,
 		repo.Owner,
 		repo.Name,
 		issue.GetNumber(),
-		opt,
+		&github.IssueListCommentsOptions{
+			Sort:      "created",
+			Direction: "asc",
+			ListOptions: github.ListOptions{
+				Page: page,
+			},
+		},
 	)
 
 	if err != nil {
