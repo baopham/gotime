@@ -2,11 +2,14 @@ package github
 
 import (
 	"context"
+	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/baopham/gotime"
 	"github.com/baopham/gotime/concurrentslice"
 	"github.com/google/go-github/github"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -43,6 +46,60 @@ func (s *Service) ResponseTime(repo *gotime.Repo) (time.Duration, error) {
 	go process(infos, duration)
 
 	return <-duration, nil
+}
+
+func (s *Service) GetOwnRepo(owner, repoName string) (*gotime.Repo, error) {
+	repo, _, err := s.Client.Repositories.Get(s.Ctx, owner, repoName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	members := []string{}
+	page := 1
+
+	for page > 0 {
+		collabs, resp, err := s.Client.Repositories.ListCollaborators(
+			s.Ctx,
+			owner,
+			repoName,
+			nil,
+		)
+
+		if err != nil {
+			log.Printf("!!!! failed to get collabs for %s, err: %s", repoName, err)
+			return nil, err
+		}
+
+		for _, u := range collabs {
+			members = append(members, u.GetLogin())
+		}
+		page = resp.NextPage
+	}
+	return &gotime.Repo{
+		Owner:    owner,
+		Name:     repoName,
+		URL:      repo.GetURL(),
+		Members:  &members,
+		Provider: gotime.GITHUB,
+	}, nil
+}
+
+func (s *Service) GetOtherRepo(owner, repoName string) (*gotime.Repo, error) {
+	repo, _, err := s.Client.Repositories.Get(s.Ctx, owner, repoName)
+
+	if err != nil {
+		log.Printf("!!!! failed to get repo %s, err: %s", repoName, err)
+		return nil, err
+	}
+
+	return &gotime.Repo{
+		Owner:    owner,
+		Name:     repoName,
+		URL:      repo.GetURL(),
+		Members:  nil,
+		Provider: gotime.GITHUB,
+	}, nil
 }
 
 // Get some latest sample issues
@@ -84,8 +141,11 @@ func (s *Service) getIssueInfo(repo *gotime.Repo, issue *github.Issue, page int)
 	info := &gotime.IssueInfo{
 		Repo:      repo,
 		Number:    *issue.Number,
-		ClosedAt:  issue.ClosedAt,
 		CreatedAt: issue.CreatedAt,
+	}
+
+	if issue.ClosedBy != nil && issue.ClosedBy.GetLogin() != issue.User.GetLogin() {
+		info.OtherClosedAt = issue.ClosedAt
 	}
 
 	opt := &github.IssueListCommentsOptions{
@@ -100,7 +160,7 @@ func (s *Service) getIssueInfo(repo *gotime.Repo, issue *github.Issue, page int)
 		s.Ctx,
 		repo.Owner,
 		repo.Name,
-		*issue.Number,
+		issue.GetNumber(),
 		opt,
 	)
 
@@ -109,13 +169,22 @@ func (s *Service) getIssueInfo(repo *gotime.Repo, issue *github.Issue, page int)
 		return nil, err
 	}
 
-	members := stringsToMap(repo.Members)
+	if repo.Members != nil {
+		members := stringsToMap(*repo.Members)
 
-	// Find the earliest comment made by one of the repo's members
-	for _, comment := range comments {
-		if _, isMember := members[*comment.User.Login]; isMember {
-			info.EarliestResponse = comment.CreatedAt
-			break
+		// Find the earliest comment made by one of the repo's members
+		for _, comment := range comments {
+			if _, isMember := members[comment.User.GetLogin()]; isMember {
+				info.EarliestResponse = comment.CreatedAt
+				break
+			}
+		}
+	} else {
+		for _, comment := range comments {
+			if valid, _ := commentMadeByMember(comment, repo); valid {
+				info.EarliestResponse = comment.CreatedAt
+				break
+			}
 		}
 	}
 
@@ -124,6 +193,24 @@ func (s *Service) getIssueInfo(repo *gotime.Repo, issue *github.Issue, page int)
 	}
 
 	return info, nil
+}
+
+func commentMadeByMember(c *github.IssueComment, repo *gotime.Repo) (bool, error) {
+	if c.User.GetLogin() == repo.Owner {
+		return true, nil
+	}
+
+	doc, err := goquery.NewDocument(c.GetHTMLURL())
+
+	if err != nil {
+		log.Printf("!!!! failed to parse HTML, err: %s", err)
+		return false, err
+	}
+
+	comment := doc.Find(fmt.Sprintf("#issuecomment-%d", c.GetID()))
+	label := strings.TrimSpace(comment.Find(".timeline-comment-label").Text())
+
+	return label == "Owner" || label == "Member" || label == "Contributor", nil
 }
 
 func process(infos chan *gotime.IssueInfo, duration chan time.Duration) {
@@ -139,9 +226,9 @@ func process(infos chan *gotime.IssueInfo, duration chan time.Duration) {
 		var earliestTime *time.Time
 
 		if info.EarliestResponse == nil {
-			earliestTime = info.ClosedAt
-		} else if info.ClosedAt != nil && info.ClosedAt.Before(*info.EarliestResponse) {
-			earliestTime = info.ClosedAt
+			earliestTime = info.OtherClosedAt
+		} else if info.OtherClosedAt != nil && info.OtherClosedAt.Before(*info.EarliestResponse) {
+			earliestTime = info.OtherClosedAt
 		} else {
 			earliestTime = info.EarliestResponse
 		}
