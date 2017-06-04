@@ -26,9 +26,9 @@ var _ = Describe("Github integration", func() {
 			repo, err := service.GetOtherRepo("go-kit", "kit")
 			Expect(err).To(BeNil())
 
-			responseTime, err := service.ResponseTime(repo)
+			responseTime, err := service.GetResponseTime(repo)
 			Expect(err).To(BeNil())
-			Expect(responseTime).Should(BeNumerically(">", time.Duration(0)))
+			Expect(responseTime.Duration).Should(BeNumerically(">", time.Duration(0)))
 
 			log.Println(responseTime)
 		})

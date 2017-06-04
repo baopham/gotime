@@ -63,7 +63,7 @@ var _ = Describe("Github", func() {
 			repo, err := service.GetOwnRepo(owner, repoName)
 			Expect(err).To(BeNil())
 
-			responseTime, err := service.ResponseTime(repo)
+			responseTime, err := service.GetResponseTime(repo)
 			Expect(err).To(BeNil())
 
 			Expect(responseTime.String()).To(Equal("1m58s"))

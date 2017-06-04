@@ -31,12 +31,12 @@ func NewService(req *Request) *Service {
 	}
 }
 
-// ResponseTime gives the general time that is needed to respond to an issue
-func (s *Service) ResponseTime(repo *gotime.Repo) (time.Duration, error) {
+// GetResponseTime gives the general time that is needed to respond to an issue
+func (s *Service) GetResponseTime(repo *gotime.Repo) (*gotime.ResponseTime, error) {
 	issues, err := s.getIssues(repo)
 
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	infos := make(chan *gotime.IssueInfo, len(issues))
@@ -45,7 +45,7 @@ func (s *Service) ResponseTime(repo *gotime.Repo) (time.Duration, error) {
 	go s.collect(repo, issues, infos)
 	go process(infos, duration)
 
-	return <-duration, nil
+	return &gotime.ResponseTime{<-duration}, nil
 }
 
 func (s *Service) GetOwnRepo(owner, repoName string) (*gotime.Repo, error) {
