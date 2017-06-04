@@ -181,8 +181,13 @@ func (s *Service) getIssueInfo(repo *gotime.Repo, issue *github.Issue, page int)
 			}
 		}
 	} else {
+		doc, err := goquery.NewDocument(issue.GetHTMLURL())
+		if err != nil {
+			log.Printf("!!!! failed to parse HTML, err: %s", err)
+			return nil, err
+		}
 		for _, comment := range comments {
-			if valid, _ := commentMadeByMember(comment, repo); valid {
+			if valid, _ := commentMadeByMember(doc, comment, repo); valid {
 				info.EarliestResponse = comment.CreatedAt
 				break
 			}
@@ -196,16 +201,9 @@ func (s *Service) getIssueInfo(repo *gotime.Repo, issue *github.Issue, page int)
 	return info, nil
 }
 
-func commentMadeByMember(c *github.IssueComment, repo *gotime.Repo) (bool, error) {
+func commentMadeByMember(doc *goquery.Document, c *github.IssueComment, repo *gotime.Repo) (bool, error) {
 	if c.User.GetLogin() == repo.Owner {
 		return true, nil
-	}
-
-	doc, err := goquery.NewDocument(c.GetHTMLURL())
-
-	if err != nil {
-		log.Printf("!!!! failed to parse HTML, err: %s", err)
-		return false, err
 	}
 
 	comment := doc.Find(fmt.Sprintf("#issuecomment-%d", c.GetID()))
