@@ -69,4 +69,10 @@ var _ = Describe("Github", func() {
 			Expect(responseTime.String()).To(Equal("1m58s"))
 		})
 	})
+
+	Context("when calling ResponseTime() on other repo", func() {
+		It("should return the average response time", func() {
+			// TODO
+		})
+	})
 })
