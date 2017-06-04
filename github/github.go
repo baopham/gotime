@@ -63,7 +63,10 @@ func (s *Service) GetOwnRepo(owner, repoName string) (*gotime.Repo, error) {
 			s.Ctx,
 			owner,
 			repoName,
-			nil,
+			&github.ListOptions{
+				Page:    1,
+				PerPage: 100,
+			},
 		)
 
 		if err != nil {

@@ -1,0 +1,26 @@
+[
+  {
+    "login": "baopham",
+    "id": 783410,
+    "avatar_url": "https://avatars0.githubusercontent.com/u/783410?v=3",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/baopham",
+    "html_url": "https://github.com/baopham",
+    "followers_url": "https://api.github.com/users/baopham/followers",
+    "following_url": "https://api.github.com/users/baopham/following{/other_user}",
+    "gists_url": "https://api.github.com/users/baopham/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/baopham/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/baopham/subscriptions",
+    "organizations_url": "https://api.github.com/users/baopham/orgs",
+    "repos_url": "https://api.github.com/users/baopham/repos",
+    "events_url": "https://api.github.com/users/baopham/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/baopham/received_events",
+    "type": "User",
+    "site_admin": false,
+    "permissions": {
+      "admin": true,
+      "push": true,
+      "pull": true
+    }
+  }
+]
