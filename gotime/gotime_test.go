@@ -1,7 +1,7 @@
 package gotime_test
 
 import (
-	. "github.com/baopham/gotime"
+	. "github.com/baopham/gotime/gotime"
 	"time"
 
 	. "github.com/onsi/ginkgo"

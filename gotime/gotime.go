@@ -4,11 +4,11 @@ import (
 	"time"
 )
 
-type RepoProvider uint8
+type RepoProvider string
 type Responsiveness uint8
 
 const (
-	GITHUB RepoProvider = iota
+	GITHUB RepoProvider = "github"
 )
 
 const (
