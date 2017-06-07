@@ -105,6 +105,11 @@ func (s *Service) GetOtherRepo(owner, repoName string) (*gotime.Repo, error) {
 	}, nil
 }
 
+func (s *Service) IsRateLimitError(err error) bool {
+	_, ok := err.(*github.RateLimitError)
+	return ok
+}
+
 // Get some latest sample issues
 func (s *Service) getIssues(repo *gotime.Repo) ([]*github.Issue, error) {
 	opt := &github.IssueListByRepoOptions{

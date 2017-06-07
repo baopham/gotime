@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"github.com/baopham/gotime/github"
 	"github.com/baopham/gotime/gotime"
-	gh "github.com/google/go-github/github"
 	"github.com/gorilla/mux"
 	"golang.org/x/oauth2"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -23,8 +21,7 @@ func GetResponseTime(w http.ResponseWriter, r *http.Request) {
 
 func getGithubRepoResponseTime(w *http.ResponseWriter, r *http.Request, vars map[string]string) {
 	var token oauth2.TokenSource
-	owner := vars["owner"]
-	repoName := vars["repo"]
+	owner, repoName := vars["owner"], vars["repo"]
 	context := r.Context()
 	req := &github.Request{
 		Ctx: context,
@@ -49,28 +46,24 @@ func getGithubRepoResponseTime(w *http.ResponseWriter, r *http.Request, vars map
 	}
 
 	if err != nil {
-		handleError(err, w)
+		handleError(err, w, service)
 		return
 	}
 
 	responseTime, err := service.GetResponseTime(repo)
 
 	if err != nil {
-		handleError(err, w)
+		handleError(err, w, service)
 		return
 	}
 
 	json.NewEncoder(*w).Encode(responseTime.Duration.String())
 }
 
-func handleError(err error, w *http.ResponseWriter) {
-	log.Println(err)
-
-	_, ok := err.(*gh.RateLimitError)
-
+func handleError(err error, w *http.ResponseWriter, service gotime.GoTimer) {
 	message := "Something went wrong"
 
-	if ok {
+	if service.IsRateLimitError(err) {
 		message = "API rate limit. Supply a token to increase the limit"
 	}
 

@@ -17,6 +17,13 @@ const (
 	NOT_RESPONSIVE
 )
 
+type GoTimer interface {
+	GetResponseTime(repo *Repo) (*ResponseTime, error)
+	GetOwnRepo(owner, repoName string) (*Repo, error)
+	GetOtherRepo(owner, repoName string) (*Repo, error)
+	IsRateLimitError(err error) bool
+}
+
 type Repo struct {
 	Owner, Name, URL string
 	Members          *[]string
