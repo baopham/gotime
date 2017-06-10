@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
@@ -12,5 +13,11 @@ func main() {
 	r.Path("/response-time/{provider}/{owner}/{repo}").
 		HandlerFunc(api.GetResponseTime)
 
-	log.Fatalln(http.ListenAndServe(":8000", r))
+	port := "3000"
+
+	if p := os.Getenv("PORT"); p != "" {
+		port = p
+	}
+
+	log.Fatalln(http.ListenAndServe(":"+port, r))
 }
