@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"github.com/baopham/gotime/github"
 	"github.com/baopham/gotime/gotime"
 	"golang.org/x/oauth2"
@@ -24,7 +23,7 @@ func getGithubRepoResponseTime(w http.ResponseWriter, r *http.Request, vars map[
 		return
 	}
 
-	json.NewEncoder(w).Encode(responseTime.Duration.String())
+	respond(responseTime.Duration.String(), w)
 }
 
 func getGithubRepoLatestActivity(w http.ResponseWriter, r *http.Request, vars map[string]string) {
@@ -42,7 +41,7 @@ func getGithubRepoLatestActivity(w http.ResponseWriter, r *http.Request, vars ma
 		return
 	}
 
-	json.NewEncoder(w).Encode(activity)
+	respond(activity, w)
 }
 
 func getGithubRequestInfo(r *http.Request, vars map[string]string) (*gotime.Repo, *github.Service, error) {
