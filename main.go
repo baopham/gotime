@@ -19,5 +19,5 @@ func main() {
 		port = p
 	}
 
-	log.Fatalln(http.ListenAndServe(":"+port, r))
+	log.Fatalln(http.ListenAndServe("localhost:"+port, r))
 }
