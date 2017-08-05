@@ -48,6 +48,15 @@ func (s *Service) GetResponseTime(repo *gotime.Repo) (*gotime.ResponseTime, erro
 	return &gotime.ResponseTime{<-duration}, nil
 }
 
+// GetLatestActivity gives the latest activity in the repo (be it commit or response to an issue)
+func (s *Service) GetLatestActivity(repo *gotime.Repo) (*gotime.LatestActivity, error) {
+	// TODO
+	return &gotime.LatestActivity{
+		URL:  "https://github.com/baopham/gotime/commits/latest-commit-hash",
+		Type: "Commit",
+	}, nil
+}
+
 func (s *Service) GetOwnRepo(owner, repoName string) (*gotime.Repo, error) {
 	repo, _, err := s.Client.Repositories.Get(s.Ctx, owner, repoName)
 

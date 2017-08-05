@@ -13,6 +13,9 @@ func main() {
 	r.Path("/response-time/{provider}/{owner}/{repo}").
 		HandlerFunc(api.GetResponseTime)
 
+	r.Path("/latest-activity/{provider}/{owner}/{repo}").
+		HandlerFunc(api.GetLatestActivity)
+
 	port := "3000"
 
 	if p := os.Getenv("PORT"); p != "" {

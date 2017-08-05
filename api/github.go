@@ -9,7 +9,43 @@ import (
 	"strings"
 )
 
-func getGithubRepoResponseTime(w *http.ResponseWriter, r *http.Request, vars map[string]string) {
+func getGithubRepoResponseTime(w http.ResponseWriter, r *http.Request, vars map[string]string) {
+	repo, service, err := getGithubRequestInfo(r, vars)
+
+	if err != nil {
+		handleError(err, w, service)
+		return
+	}
+
+	responseTime, err := service.GetResponseTime(repo)
+
+	if err != nil {
+		handleError(err, w, service)
+		return
+	}
+
+	json.NewEncoder(w).Encode(responseTime.Duration.String())
+}
+
+func getGithubRepoLatestActivity(w http.ResponseWriter, r *http.Request, vars map[string]string) {
+	repo, service, err := getGithubRequestInfo(r, vars)
+
+	if err != nil {
+		handleError(err, w, service)
+		return
+	}
+
+	activity, err := service.GetLatestActivity(repo)
+
+	if err != nil {
+		handleError(err, w, service)
+		return
+	}
+
+	json.NewEncoder(w).Encode(activity)
+}
+
+func getGithubRequestInfo(r *http.Request, vars map[string]string) (*gotime.Repo, *github.Service, error) {
 	var token oauth2.TokenSource
 	owner, repoName := vars["owner"], vars["repo"]
 	context := r.Context()
@@ -35,17 +71,5 @@ func getGithubRepoResponseTime(w *http.ResponseWriter, r *http.Request, vars map
 		repo, err = service.GetOtherRepo(owner, repoName)
 	}
 
-	if err != nil {
-		handleError(err, w, service)
-		return
-	}
-
-	responseTime, err := service.GetResponseTime(repo)
-
-	if err != nil {
-		handleError(err, w, service)
-		return
-	}
-
-	json.NewEncoder(*w).Encode(responseTime.Duration.String())
+	return repo, service, err
 }
