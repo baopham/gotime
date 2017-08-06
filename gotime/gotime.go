@@ -22,7 +22,7 @@ type GoTimer interface {
 	GetOwnRepo(owner, repoName string) (*Repo, error)
 	GetOtherRepo(owner, repoName string) (*Repo, error)
 	IsRateLimitError(err error) bool
-	GetLatestActivity(repo *Repo) (*LatestActivity, error)
+	GetLatestActivity(repo *Repo) (*Activity, error)
 }
 
 type Repo struct {
@@ -45,10 +45,10 @@ type ResponseTime struct {
 	time.Duration
 }
 
-type LatestActivity struct {
-	Time time.Time
+type Activity struct {
+	Time *time.Time
 	Type string
-	URL  string
+	URL  *string
 }
 
 func (r ResponseTime) GetResponsiveness() Responsiveness {

@@ -42,19 +42,91 @@ func (s *Service) GetResponseTime(repo *gotime.Repo) (*gotime.ResponseTime, erro
 	infos := make(chan *gotime.IssueInfo, len(issues))
 	duration := make(chan time.Duration, 1)
 
-	go s.collect(repo, issues, infos)
-	go process(infos, duration)
+	go s.collectIssues(repo, issues, infos)
+	go processIssues(infos, duration)
 
 	return &gotime.ResponseTime{<-duration}, nil
 }
 
 // GetLatestActivity gives the latest activity in the repo (be it commit or response to an issue)
-func (s *Service) GetLatestActivity(repo *gotime.Repo) (*gotime.LatestActivity, error) {
-	// TODO
-	return &gotime.LatestActivity{
-		URL:  "https://github.com/baopham/gotime/commits/latest-commit-hash",
-		Type: "Commit",
-	}, nil
+func (s *Service) GetLatestActivity(repo *gotime.Repo) (*gotime.Activity, error) {
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	activities := make(chan *gotime.Activity)
+	listOptions := github.ListOptions{PerPage: 10}
+
+	// Commit type - get the latest one
+	go func() {
+		defer wg.Done()
+		commits, _, err := s.Client.Repositories.ListCommits(
+			s.Ctx,
+			repo.Owner,
+			repo.Name,
+			&github.CommitsListOptions{ListOptions: listOptions},
+		)
+		if err == nil && len(commits) > 0 {
+			commit := commits[0]
+			activities <- &gotime.Activity{
+				Type: "Commit",
+				URL:  commit.HTMLURL,
+				Time: commit.Commit.Committer.Date,
+			}
+		}
+	}()
+
+	// Search for latest comment activity of the owner
+	go func() {
+		defer wg.Done()
+		result, _, err := s.Client.Search.Issues(
+			s.Ctx,
+			fmt.Sprintf("commenter:%s repo:%s/%s", repo.Owner, repo.Owner, repo.Name),
+			&github.SearchOptions{ListOptions: listOptions},
+		)
+		if err == nil && result != nil && len(result.Issues) > 0 {
+			issue := result.Issues[0]
+			activities <- &gotime.Activity{
+				Type: "Comment",
+				URL:  issue.HTMLURL,
+				// Not entirely correct that we use updated_at.
+				// TODO: improve this
+				Time: issue.UpdatedAt,
+			}
+		}
+	}()
+
+	// Search for latest issue activity of the owner
+	go func() {
+		defer wg.Done()
+		result, _, err := s.Client.Search.Issues(
+			s.Ctx,
+			fmt.Sprintf("author:%s repo:%s/%s", repo.Owner, repo.Owner, repo.Name),
+			&github.SearchOptions{Sort: "created", Order: "desc", ListOptions: listOptions},
+		)
+		if err == nil && result != nil && len(result.Issues) > 0 {
+			issue := result.Issues[0]
+			activities <- &gotime.Activity{
+				Type: "Issue",
+				URL:  issue.HTMLURL,
+				Time: issue.CreatedAt,
+			}
+		}
+	}()
+
+	go func() {
+		wg.Wait()
+		close(activities)
+	}()
+
+	var latestActivity *gotime.Activity
+
+	for activity := range activities {
+		if latestActivity == nil || latestActivity.Time.Before(*activity.Time) {
+			latestActivity = activity
+		}
+	}
+
+	return latestActivity, nil
 }
 
 func (s *Service) GetOwnRepo(owner, repoName string) (*gotime.Repo, error) {
@@ -133,7 +205,7 @@ func (s *Service) getIssues(repo *gotime.Repo) ([]*github.Issue, error) {
 	return issues, err
 }
 
-func (s *Service) collect(repo *gotime.Repo, issues []*github.Issue, c chan<- *gotime.IssueInfo) {
+func (s *Service) collectIssues(repo *gotime.Repo, issues []*github.Issue, c chan<- *gotime.IssueInfo) {
 	var wg sync.WaitGroup
 	wg.Add(len(issues))
 
@@ -226,7 +298,7 @@ func commentMadeByMember(doc *goquery.Document, c *github.IssueComment, repo *go
 	return label == "Owner" || label == "Member" || label == "Contributor", nil
 }
 
-func process(infos chan *gotime.IssueInfo, duration chan time.Duration) {
+func processIssues(infos chan *gotime.IssueInfo, duration chan time.Duration) {
 	slice := concurrentslice.New()
 
 	for {
