@@ -13,7 +13,7 @@
 
 ```
 curl -X GET \
-  'http://localhost:8000/latest-activity/github/baopham/gotime' \
+  'http://localhost:3000/latest-activity/github/baopham/gotime' \
   -H 'content-type: application/json'
 ```
 
@@ -21,6 +21,6 @@ curl -X GET \
 
 ```
 curl -X GET \
-  'http://localhost:8000/response-time/github/baopham/gotime' \
+  'http://localhost:3000/response-time/github/baopham/gotime' \
   -H 'content-type: application/json'
 ```
