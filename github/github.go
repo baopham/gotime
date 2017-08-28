@@ -152,7 +152,6 @@ func (s *Service) GetOwnRepo(owner, repoName string) (*gotime.Repo, error) {
 
 		if err != nil {
 			log.Printf("!!!! failed to get collabs for %s, err: %s", repoName, err)
-			return nil, err
 		}
 
 		for _, u := range collabs {
@@ -256,7 +255,7 @@ func (s *Service) getIssueInfo(repo *gotime.Repo, issue *github.Issue, page int)
 		return nil, err
 	}
 
-	if repo.Members != nil {
+	if repo.Members != nil && len(*repo.Members) > 0 {
 		members := stringsToMap(*repo.Members)
 
 		// Find the earliest comment made by one of the repo's members
